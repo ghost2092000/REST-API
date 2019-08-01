@@ -4,12 +4,26 @@ const mongoose = require('mongoose');
 
 const Product = require('../models/product');
 
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+    destination: function(req, file, cb){
+        cb(null, './uploads/');
+    },
+    filename: function(req, file, cb){
+        cb(null, new Date().toISOString() + file.originalname);
+    }
+})
+
+
+const upload = multer({storage: storage});
+
 //////////////////    /products   ////////////////////////
 
 
 //get all the products that we have
 router.get('/', (req, res, next) => { 
-      Product.find()
+      Product.find() 
       .select('name price _id') // use this so we don't get useless info back
       .exec()
       .then(docs =>{
@@ -42,7 +56,8 @@ router.get('/', (req, res, next) => {
  
 
 
-router.post('/', (req, res, next) => { 
+router.post('/',upload.single('productImage'), (req, res, next) => { 
+    console.log(req.file);
     //This is where i can store the data to the db!, this extracts the info we write in insomia 
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
@@ -56,6 +71,8 @@ router.post('/', (req, res, next) => {
         .then(result => {
             console.log(result);
         res.status(201).json({
+
+            //{ This has to do with the Mongoose Validation 
             message: 'Created Product successfully', 
             // createdProduct: product // this is where product object goes to
             createdProduct: {
@@ -67,6 +84,7 @@ router.post('/', (req, res, next) => {
                       url: "http://localhost:3000/products/" + result._id
                   }
                 }
+            //}
          });
         })
         .catch(err => {
