@@ -6,6 +6,9 @@ const Product = require('../models/product');
 
 const multer = require('multer');
 
+const checkAuth = require('../middleware/check-auth');
+
+
 const storage = multer.diskStorage({
     destination: function(req, file, cb){
         cb(null, './uploads/');
@@ -15,8 +18,25 @@ const storage = multer.diskStorage({
     }
 })
 
+const fileFilter = (req, file, cb) => {
+    //reject a file 
+    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png'){
+        cb(null, true);
+    }
+    else{
+        cb(null, false);
+    }
+};
 
-const upload = multer({storage: storage});
+
+
+const upload = multer({
+    storage: storage,
+    limits:{ 
+        fileSize: 1024 * 1024 * 5
+    },
+    fileFilter: fileFilter, 
+});
 
 //////////////////    /products   ////////////////////////
 
@@ -24,7 +44,7 @@ const upload = multer({storage: storage});
 //get all the products that we have
 router.get('/', (req, res, next) => { 
       Product.find() 
-      .select('name price _id') // use this so we don't get useless info back
+      .select('name price _id productImage') // use this so we don't get useless info back
       .exec()
       .then(docs =>{
           const response ={
@@ -36,6 +56,7 @@ router.get('/', (req, res, next) => {
                       name: doc.name,
                       price: doc.price,
                       _id: doc._id,
+                      productImage: doc.productImage,
                         request:{
                             type: "GET",
                             url: "http://localhost:3000/products/" + doc._id
@@ -56,19 +77,20 @@ router.get('/', (req, res, next) => {
  
 
 
-router.post('/',upload.single('productImage'), (req, res, next) => { 
+router.post('/',  upload.single('productImage'),checkAuth, (req, res, next) => { 
     console.log(req.file);
     //This is where i can store the data to the db!, this extracts the info we write in insomia 
     const product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        price: req.body.price
+        price: req.body.price,
+        productImage: req.file.path
     });
 
     //save is in charge of actually storing things inside the db
     product
         .save()
-        .then(result => {
+        .then(result  => {
             console.log(result);
         res.status(201).json({
 
@@ -103,6 +125,7 @@ router.post('/',upload.single('productImage'), (req, res, next) => {
 router.get('/:productId', (req, res, next) => { 
     const id = req.params.productId;
     Product.findById(id)
+    .select('name price _id productImage')
     .exec()
     .then(doc => {
         console.log('From Database',doc);

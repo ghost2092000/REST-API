@@ -8,6 +8,12 @@ const mongoose = require('mongoose'); //
 const productRoutes = require('./api/routes/products');
 const orderRoutes = require('./api/routes/orders');
 
+const userRoutes = require('./api/routes/user')
+
+//this is used to get the url for images
+app.use('/uploads', express.static('uploads'));
+
+
 //This has the link to mongoDB, and  process.env.MONGO_ATLAS_PW is what stores my password
 mongoose.connect('mongodb+srv://Roberto:' + process.env.MONGO_ATLAS_PW +'@cluster0-pzllp.mongodb.net/test?retryWrites=true&w=majority', { useNewUrlParser: true });
 
@@ -43,7 +49,7 @@ app.use((req, res, next) => {
 // Routes that should handle Requests
 app.use('/products', productRoutes); // this is used so i don't have to use the whole url, so like a filer 
 app.use('/orders', orderRoutes);     // this is used so i don't have to use the whole url, so like a filer 
-
+app.use('/user', userRoutes);
 
 
 //{This is used to handle request that were made but don't return anything
